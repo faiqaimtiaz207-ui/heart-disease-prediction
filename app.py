@@ -1,384 +1,191 @@
-from flask import Flask, request, render_template_string
+import streamlit as st
 import pickle
 import pandas as pd
 
-app = Flask(__name__)
+st.set_page_config(
+    page_title="Heart Disease Prediction",
+    page_icon="❤️",
+    layout="centered"
+)
 
+# Load trained model
 with open("heart_disease_model.pkl", "rb") as file:
     model = pickle.load(file)
 
 
-@app.route("/", methods=["GET", "POST"])
-def home():
+# -------------------- CLEAR FUNCTION --------------------
 
-    prediction = ""
-    result_class = ""
+def clear_all():
+    st.session_state.cp = 0
+    st.session_state.ca = 0
+    st.session_state.thal = 3
+    st.session_state.oldpeak = 0.0
+    st.session_state.prediction = None
 
-    cp = ""
-    ca = ""
-    thal = ""
-    oldpeak = ""
 
-    if request.method == "POST":
+# -------------------- CUSTOM UI --------------------
 
-        cp = request.form["cp"]
-        ca = request.form["ca"]
-        thal = request.form["thal"]
-        oldpeak = request.form["oldpeak"]
-
-        patient_data = pd.DataFrame(
-            [[float(cp), float(ca), float(thal), float(oldpeak)]],
-            columns=["cp", "ca", "thal", "oldpeak"]
-        )
-
-        result = model.predict(patient_data)
-
-        if result[0] == 1:
-            prediction = "Heart Disease Detected"
-            result_class = "danger"
-        else:
-            prediction = "No Heart Disease Detected"
-            result_class = "success"
-
-    return render_template_string("""
-
-<!DOCTYPE html>
-<html>
-
-<head>
-
-<title>Heart Disease Prediction</title>
-
+st.markdown("""
 <style>
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+[data-testid="stAppViewContainer"] {
+    background-color: #f1f5f9;
 }
 
-body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #e8f5ff, #f8fbff);
-    min-height: 100vh;
+[data-testid="stHeader"] {
+    background-color: transparent;
 }
 
-.header {
-    background: linear-gradient(135deg, #0f766e, #0ea5a4);
+/* Header */
+.title {
+    background: linear-gradient(135deg, #0f766e, #14b8a6);
+    padding: 30px;
+    border-radius: 15px;
     color: white;
     text-align: center;
-    padding: 35px 20px;
+    margin-bottom: 25px;
 }
 
-.header h1 {
-    font-size: 36px;
-    margin-bottom: 10px;
-}
-
-.header p {
-    font-size: 16px;
-    opacity: 0.9;
-}
-
-.container {
-    width: 90%;
-    max-width: 900px;
-    margin: 40px auto;
-}
-
+/* Patient information box */
 .card {
-    background: white;
-    border-radius: 18px;
-    padding: 35px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-}
-
-.card h2 {
-    color: #0f766e;
-    margin-bottom: 10px;
-}
-
-.description {
-    color: #666;
-    margin-bottom: 30px;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 22px;
-}
-
-.field label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: #333;
-}
-
-.field input {
-    width: 100%;
-    padding: 13px;
-    border: 1px solid #d1d5db;
-    border-radius: 9px;
-    font-size: 15px;
-}
-
-.field input:focus {
-    outline: none;
-    border-color: #0f766e;
-}
-
-.buttons {
-    display: flex;
-    gap: 12px;
-    margin-top: 30px;
-}
-
-button {
-    flex: 1;
-    padding: 15px;
-    border: none;
-    border-radius: 10px;
+    background-color: #0f766e;
+    padding: 25px;
+    border-radius: 15px;
     color: white;
-    font-size: 17px;
+    margin-bottom: 20px;
+}
+
+/* Buttons */
+.stButton > button {
+    width: 100%;
+    border-radius: 10px;
+    height: 45px;
     font-weight: bold;
-    cursor: pointer;
+    background-color: #0f766e;
+    color: white;
+    border: none;
 }
 
-.predict {
-    background: #0f766e;
-}
-
-.predict:hover {
-    background: #115e59;
-}
-
-.clear {
-    background: #64748b;
-}
-
-.clear:hover {
-    background: #475569;
-}
-
-.result {
-    margin-top: 30px;
-    padding: 20px;
-    text-align: center;
-    border-radius: 12px;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.success {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.danger {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.footer {
-    text-align: center;
-    margin-top: 30px;
-    color: #777;
-    font-size: 13px;
-}
-
-@media (max-width: 650px) {
-
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .buttons {
-        flex-direction: column;
-    }
-
-    .header h1 {
-        font-size: 28px;
-    }
-
-    .card {
-        padding: 25px;
-    }
+.stButton > button:hover {
+    background-color: #14b8a6;
+    color: white;
 }
 
 </style>
+""", unsafe_allow_html=True)
 
-</head>
 
+# -------------------- HEADER --------------------
 
-<body>
-
-<div class="header">
-
+st.markdown("""
+<div class="title">
     <h1>❤️ Heart Disease Prediction</h1>
-
     <p>Machine Learning Based Health Prediction System</p>
-
 </div>
+""", unsafe_allow_html=True)
 
 
-<div class="container">
+# -------------------- PATIENT INFORMATION --------------------
 
+st.markdown("""
 <div class="card">
-
-    <h2>Patient Information</h2>
-
-    <p class="description">
-        Enter the patient's medical information below to generate a prediction.
-    </p>
-
-
-    <form method="POST">
-
-        <div class="form-grid">
-
-            <div class="field">
-
-                <label>Chest Pain (cp)</label>
-
-                <input
-                    type="number"
-                    name="cp"
-                    min="0"
-                    max="3"
-                    step="1"
-                    placeholder="0 - 3"
-                    value="{{ cp }}"
-                    required
-                >
-
-            </div>
-
-
-            <div class="field">
-
-                <label>Major Vessels (ca)</label>
-
-                <input
-                    type="number"
-                    name="ca"
-                    min="0"
-                    max="3"
-                    step="1"
-                    placeholder="0 - 3"
-                    value="{{ ca }}"
-                    required
-                >
-
-            </div>
-
-
-            <div class="field">
-
-                <label>Thalassemia (thal)</label>
-
-                <input
-                    type="number"
-                    name="thal"
-                    min="0"
-                    max="7"
-                    step="1"
-                    placeholder="Enter value"
-                    value="{{ thal }}"
-                    required
-                >
-
-            </div>
-
-
-            <div class="field">
-
-                <label>ST Depression (oldpeak)</label>
-
-                <input
-                    type="number"
-                    name="oldpeak"
-                    step="0.1"
-                    placeholder="e.g. 1.0"
-                    value="{{ oldpeak }}"
-                    required
-                >
-
-            </div>
-
-        </div>
-
-
-        <div class="buttons">
-
-            <button type="submit" class="predict">
-                🔍 Predict Heart Disease
-            </button>
-
-            <button
-                type="button"
-                class="clear"
-                onclick="clearForm()">
-                🗑️ Clear All
-            </button>
-
-        </div>
-
-    </form>
-
-
-    {% if prediction %}
-
-        <div class="result {{ result_class }}">
-
-            {{ prediction }}
-
-        </div>
-
-    {% endif %}
-
+    <h3>Patient Information</h3>
+    <p>Enter the following information to get a prediction.</p>
 </div>
+""", unsafe_allow_html=True)
 
 
-<div class="footer">
+# -------------------- INPUT FIELDS --------------------
 
-    Heart Disease Prediction System • Machine Learning Project
+if "cp" not in st.session_state:
+    st.session_state.cp = 0
 
-</div>
+if "ca" not in st.session_state:
+    st.session_state.ca = 0
 
-</div>
+if "thal" not in st.session_state:
+    st.session_state.thal = 3
+
+if "oldpeak" not in st.session_state:
+    st.session_state.oldpeak = 0.0
+
+if "prediction" not in st.session_state:
+    st.session_state.prediction = None
 
 
-<script>
+cp = st.number_input(
+    "Chest Pain Type (cp)",
+    min_value=0,
+    max_value=3,
+    step=1,
+    key="cp"
+)
 
-function clearForm() {
+ca = st.number_input(
+    "Major Vessels (ca)",
+    min_value=0,
+    max_value=3,
+    step=1,
+    key="ca"
+)
 
-    document.querySelectorAll("input").forEach(function(input) {
-        input.value = "";
-    });
+thal = st.number_input(
+    "Thalassemia (thal)",
+    min_value=0,
+    max_value=7,
+    step=1,
+    key="thal"
+)
 
-    document.querySelectorAll(".result").forEach(function(result) {
-        result.remove();
-    });
-
-}
-
-</script>
-
-</body>
-
-</html>
-
-""",
-    prediction=prediction,
-    result_class=result_class,
-    cp=cp,
-    ca=ca,
-    thal=thal,
-    oldpeak=oldpeak
+oldpeak = st.number_input(
+    "ST Depression (oldpeak)",
+    min_value=0.0,
+    max_value=10.0,
+    step=0.1,
+    key="oldpeak"
 )
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+st.write("")
+
+
+# -------------------- BUTTONS --------------------
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("🔍 Predict", use_container_width=True):
+
+        patient_data = pd.DataFrame(
+            [[cp, ca, thal, oldpeak]],
+            columns=["cp", "ca", "thal", "oldpeak"]
+        )
+
+        prediction = model.predict(patient_data)
+
+        st.session_state.prediction = prediction[0]
+
+
+with col2:
+    st.button(
+        "🗑️ Clear All",
+        use_container_width=True,
+        on_click=clear_all
+    )
+
+
+# -------------------- RESULT --------------------
+
+if st.session_state.prediction is not None:
+
+    if st.session_state.prediction == 1:
+        st.error("⚠️ Prediction: Heart Disease")
+    else:
+        st.success("✅ Prediction: No Heart Disease")
+
+
+# -------------------- FOOTER --------------------
+
+st.caption(
+    "For educational purposes only. This system is not a medical diagnosis."
+)
