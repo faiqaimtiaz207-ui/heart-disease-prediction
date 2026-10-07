@@ -1,5 +1,9 @@
 # Heart Disease Prediction System
 
+## Live Demo
+
+🔗 **Live Application:** https://heart-disease-prediction-machine.streamlit.app/
+
 ## Introduction
 
 This project is a machine learning based Heart Disease Prediction System. It uses patient medical information to predict whether a person is likely to have heart disease or not.
